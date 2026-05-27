@@ -256,7 +256,7 @@ if (!(Test-Path -Path "$installDir\logo.png")) {
 }
 if (!(Test-Path -Path "$installDir\logo.ico")) {
     Write-Host "`n[*] Downloading logo.ico..."
-    Download-FileWithProgress -url "https://github.com/denoyey/BurpsuitePro/blob/main/burp-files/img/logo.ico?raw=true" -output "$installDir\logo.ico"
+    Download-FileWithProgress -url "https://github.com/shiyalrahul004/fdfdf/blob/main/burp-files/img/logo.ico?raw=true" -output "$installDir\logo.ico"
 } else {
     Write-Host "[*] logo.ico already exists. Skipping download."
 }
