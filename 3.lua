@@ -342,12 +342,11 @@ local function HideOBCardMarkers(w)
 
     -- Remove decorative card/box backgrounds while keeping text + HP bar.
     local bgNames={
-        "Image_Name_BG","Image_BG","Image_Background",
-        "Image_NameBG","Image_PlayerBG","Image_CardBG",
+        "Image_BG","Image_Background","Image_CardBG",
         "Image_Box","Image_Border","Image_Frame",
-        "Border_Name","Border_BG","Border_Background",
+        "Border_BG","Border_Background",
         "Border_Box","Border_Frame",
-        "CanvasPanel_NameBG","CanvasPanel_Background",
+        "CanvasPanel_Background",
         "CanvasPanel_Box","CanvasPanel_Frame",
         "SizeBox_Background","Overlay_Background"
     }
@@ -525,8 +524,7 @@ local function ApplyOBTeamColor(w,teamID)
     end
     -- Remove background images (no white background)
     for _,bg in ipairs({
-        w.Image_Name_BG,w.Image_BG,w.Image_Background,
-        w.Image_NameBG,w.Image_PlayerBG,w.Image_CardBG,
+        w.Image_BG,w.Image_Background,w.Image_CardBG,
         w.Image_Box,w.Image_Border,w.Image_Frame
     }) do
         pcall(function()
@@ -687,7 +685,6 @@ end
 local function HideOBCardContainer(w)
     if not w then return end
     local parts = {
-        w.Image_Name_BG, w.Image_NameBG, w.Image_PlayerBG,
         w.Image_CardBG, w.Image_Box, w.Image_Border, w.Image_Frame,
         w.Image_Background
     }
@@ -702,10 +699,8 @@ end
 
 local function ShowOBNameDistArea(w)
     if not w then return end
-    -- Keep the card container/background permanently hidden.
-    -- Only the actual name/distance text is shown.
+    -- Keep only non-name container layers hidden.
     local bg = {
-        w.Image_Name_BG, w.Image_NameBG, w.Image_PlayerBG,
         w.Image_CardBG, w.Image_Box, w.Image_Border, w.Image_Frame,
         w.Image_Background
     }
@@ -713,6 +708,15 @@ local function ShowOBNameDistArea(w)
         pcall(function()
             if v and v.SetWidgetVisibility then
                 v:SetWidgetVisibility(UEnums.ESlateVisibility.Collapsed)
+            end
+        end)
+    end
+    for _,v in ipairs({
+        w.Image_Name_BG, w.Image_NameBG, w.Image_PlayerBG, w.Border_Name, w.CanvasPanel_NameBG
+    }) do
+        pcall(function()
+            if v and v.SetWidgetVisibility then
+                v:SetWidgetVisibility(UEnums.ESlateVisibility.SelfHitTestInvisible)
             end
         end)
     end
