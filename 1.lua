@@ -70,6 +70,8 @@ if _G.Mod_ForceTPP_Enabled == nil then _G.Mod_ForceTPP_Enabled = false end
 if not _G.Mod_Wallhack_Enabled then _G.Mod_Wallhack_Enabled = false end
 if _G.Mod_ESP_Line_Enabled == nil then _G.Mod_ESP_Line_Enabled = true end
 if _G.Mod_ESP_Text_Enabled == nil then _G.Mod_ESP_Text_Enabled = true end
+if _G.Mod_ESP_Health_Enabled == nil then _G.Mod_ESP_Health_Enabled = true end
+if _G.Mod_ESP_NameDist_Enabled == nil then _G.Mod_ESP_NameDist_Enabled = true end
 if _G.Mod_EnemyCounter_Enabled == nil then _G.Mod_EnemyCounter_Enabled = true end
 if _G.Mod_iPadView_Enabled == nil then _G.Mod_iPadView_Enabled = false end
 if _G.Mod_iPadViewFOV == nil then _G.Mod_iPadViewFOV = 110 end
@@ -2093,6 +2095,8 @@ local function setESPVal(id, v)
         end
         return true
     end
+    if id == "OBHealthESP" then _G.Mod_ESP_Health_Enabled = v; return true end
+    if id == "OBNameDistESP" then _G.Mod_ESP_NameDist_Enabled = v; return true end
     if id == "CounterTop" then
         _G.Mod_EnemyCounter_Enabled = v
         if not v then KC_Drop() else CounterState.lastText = nil end
@@ -2406,6 +2410,10 @@ _G.AK_Features = {
         get=function() return _G.Mod_ESP_Line_Enabled == true end, apply=function(v) setESPVal("LineESP", v) end },
     { id="TextESP", name="Text ESP", category="ESP", type="toggle",
         get=function() return _G.Mod_ESP_Text_Enabled == true end, apply=function(v) setESPVal("TextESP", v) end },
+    { id="OBHealthESP", name="OB Health", category="ESP", type="toggle",
+        get=function() return _G.Mod_ESP_Health_Enabled == true end, apply=function(v) setESPVal("OBHealthESP", v) end },
+    { id="OBNameDistESP", name="OB Name/Distance", category="ESP", type="toggle",
+        get=function() return _G.Mod_ESP_NameDist_Enabled == true end, apply=function(v) setESPVal("OBNameDistESP", v) end },
     { id="CounterTop", name="Enemy Counter", category="ESP", type="toggle",
         get=function() return _G.Mod_EnemyCounter_Enabled == true end, apply=function(v) setESPVal("CounterTop", v) end },
     { id="ForceTPP", name="Force TPP", category="Misc", type="toggle",
