@@ -71,6 +71,8 @@ if not _G.Mod_Wallhack_Enabled then _G.Mod_Wallhack_Enabled = false end
 if _G.Mod_ESP_Line_Enabled == nil then _G.Mod_ESP_Line_Enabled = true end
 if _G.Mod_ESP_Text_Enabled == nil then _G.Mod_ESP_Text_Enabled = true end
 if _G.Mod_EnemyCounter_Enabled == nil then _G.Mod_EnemyCounter_Enabled = true end
+if _G.Mod_iPadView_Enabled == nil then _G.Mod_iPadView_Enabled = false end
+if _G.Mod_iPadViewFOV == nil then _G.Mod_iPadViewFOV = 110 end
 
 -- ✅ ESP DISTANCE: 500 METERS FIXED (PerfMode removed)
 if _G.Mod_ESPDistance == nil then _G.Mod_ESPDistance = 500 end
@@ -1581,6 +1583,32 @@ end
 _G.StartForceTPP = StartForceTPP
 _G.StopForceTPP = StopForceTPP
 
+local _iPadViewLastPawn = nil
+local _iPadViewDefaultFOV = nil
+local function ApplyIPadView(currentPawn)
+    if not _G.CheatsEnabled then return end
+    if not slua.isValid(currentPawn) then return end
+    local cam = currentPawn.ThirdPersonCameraComponent
+    if not slua.isValid(cam) then return end
+
+    if _iPadViewLastPawn ~= currentPawn then
+        _iPadViewLastPawn = currentPawn
+        _iPadViewDefaultFOV = cam.FieldOfView
+    elseif _iPadViewDefaultFOV == nil then
+        _iPadViewDefaultFOV = cam.FieldOfView
+    end
+
+    local isAiming = (currentPawn.bIsWeaponAiming == true) or (currentPawn.bIsGunADS == true)
+    if _G.Mod_iPadView_Enabled == true and not isAiming then
+        local targetFOV = tonumber(_G.Mod_iPadViewFOV) or 110
+        if targetFOV < 90 then targetFOV = 90 end
+        if targetFOV > 130 then targetFOV = 130 end
+        cam.FieldOfView = targetFOV
+    elseif _iPadViewDefaultFOV ~= nil then
+        cam.FieldOfView = _iPadViewDefaultFOV
+    end
+end
+
 -- ============================================================
 -- CLEANUP
 -- ============================================================
@@ -1665,6 +1693,7 @@ local function MainTick()
 
         local currentPawn = controller:GetCurPawn()
         if not isValid(currentPawn) then return end
+        ApplyIPadView(currentPawn)
 
         local canvas = GetESPCanvas()
         if canvas then UpdateCanvasTransform(controller) end
@@ -2032,7 +2061,7 @@ local function StopTimer()
 end
 
 -- ============================================================
--- DRAVIX MENU (exact port from fixx2, 7 features only)
+-- DRAVIX MENU (extended features)
 -- ============================================================
 if not _G.CounterLog then
     _G.CounterLog = function(m) pcall(function() print("[MENU] " .. tostring(m)) end) end
@@ -2069,6 +2098,8 @@ local function setESPVal(id, v)
         if not v then KC_Drop() else CounterState.lastText = nil end
         return true
     end
+    if id == "iPadView" then _G.Mod_iPadView_Enabled = v; return true end
+    if id == "iPadFOV" then _G.Mod_iPadViewFOV = v; return true end
     if id == "ForceTPP" then _G.Mod_ForceTPP_Enabled = v; if v then StartForceTPP() else StopForceTPP() end; return true end
     return false
 end
@@ -2359,12 +2390,16 @@ function FloatingMenu.TryGetCanvas()
     return canvas
 end
 
--- fixx2 feature table: 7 entries only (1.lua real features)
+-- feature table
 _G.AK_Features = {
     { id="Aimbot", name="Aimbot (Hard)", category="Combat", type="toggle", critical=true,
         get=function() return _G.Mod_Aimbot_Enabled == true end, apply=function(v) setESPVal("Aimbot", v) end },
     { id="AimbotStrength", name="Aim Strength", category="Combat", type="slider", min=0, max=100, step=5,
         get=function() return _G.Mod_AimbotStrength or 80 end, apply=function(v) setESPVal("AimbotStrength", v) end },
+    { id="iPadView", name="iPad View", category="Combat", type="toggle",
+        get=function() return _G.Mod_iPadView_Enabled == true end, apply=function(v) setESPVal("iPadView", v) end },
+    { id="iPadFOV", name="iPad FOV", category="Combat", type="slider", min=90, max=130, step=1,
+        get=function() return tonumber(_G.Mod_iPadViewFOV) or 110 end, apply=function(v) setESPVal("iPadFOV", v) end },
     { id="Wallhack", name="Wallhack", category="ESP", type="toggle", critical=true,
         get=function() return _G.Mod_Wallhack_Enabled == true end, apply=function(v) setESPVal("Wallhack", v) end },
     { id="LineESP", name="Line ESP", category="ESP", type="toggle",
