@@ -938,6 +938,9 @@ local FAR_SCALE  = 0.35
 
 local FOOT_TEXT_GAP = 4
 local ACTOR_TO_FEET_M = 0.90
+local OB_WIDGET_PATH = "/Game/BluePrints/UI/OBUI/Item/OB_PlayerHeadHPItem_UIBP.OB_PlayerHeadHPItem_UIBP"
+local OB_FOOT_W = 190
+local OB_FOOT_H = 26
 
 local KC_BOX_W = 76
 local KC_BOX_H = 28
@@ -1092,8 +1095,79 @@ end
 -- ============================================================
 local FootTextState = { Entries = {} }
 
+local function SetOBWidgetVisibility(widget, enabled)
+    if not widget then return end
+    pcall(function()
+        if widget.SetWidgetVisibility then
+            widget:SetWidgetVisibility(enabled and UEnums.ESlateVisibility.SelfHitTestInvisible or UEnums.ESlateVisibility.Collapsed)
+        elseif widget.SetVisibility then
+            widget:SetVisibility(enabled and UEnums.ESlateVisibility.SelfHitTestInvisible or UEnums.ESlateVisibility.Collapsed)
+        end
+    end)
+end
+
+local function GetOBNameText(widget)
+    if not widget then return nil end
+    return widget.TextBlock_PlayerName or widget.Text_PlayerName or widget.TextBlock_Teammate_Name
+end
+
+local function PrepareOBFootWidget(widget)
+    if not widget then return nil end
+    local nameText = GetOBNameText(widget)
+    for _, txt in ipairs({
+        widget.TextBlock_TeamName, widget.TextBlock_TeamID, widget.TextBlock_PlayerTeamID, widget.TextBlock_TeamIndex,
+        widget.TextBlock_Distance, widget.Text_Distance, widget.TextBlock_Dist, widget.Text_Dist,
+        widget.TextBlock_PlayerDistance, widget.Text_PlayerDistance, widget.TextBlock_HP, widget.Text_HP,
+        widget.TextBlock_Health, widget.Text_Health, widget.TextBlock_PlayerHP, widget.Text_PlayerTeam
+    }) do
+        if txt and txt ~= nameText then
+            SetOBWidgetVisibility(txt, false)
+        end
+    end
+    for _, w in ipairs({
+        widget.Image_TeamLogoBegin, widget.Image_TeamLogoBG2, widget.Image_TeamBG_2, widget.Image_TeamBG,
+        widget.Image_WeaponIcon, widget.Image_Weapon, widget.ProgressBar_HP, widget.ProgressBar_PlayerHP,
+        widget.ProgressBar_Health, widget.ProgressBar_PlayerHealth, widget.ProgressBar_0
+    }) do
+        SetOBWidgetVisibility(w, false)
+    end
+    if nameText then
+        SetOBWidgetVisibility(nameText, true)
+        pcall(function() if nameText.SetColorAndOpacity then nameText:SetColorAndOpacity(C_TX_WHITE) end end)
+    end
+    return nameText
+end
+
 local function CreateFootTextEntry(canvas)
     if not canvas or not isValid(canvas) then return nil end
+
+    local widget = nil
+    pcall(function()
+        if slua and slua.loadUI then
+            widget = slua.loadUI(OB_WIDGET_PATH)
+        end
+    end)
+    if widget and isValid(widget) then
+        local nameText = PrepareOBFootWidget(widget)
+        local slot = nil
+        pcall(function() slot = canvas:AddChildToCanvas(widget) end)
+        if slot then
+            pcall(function() if slot.SetAutoSize then slot:SetAutoSize(false) end end)
+            pcall(function() if slot.SetSize then slot:SetSize(FVector2DClass(OB_FOOT_W, OB_FOOT_H)) end end)
+            pcall(function() if slot.SetZOrder then slot:SetZOrder(9998) end end)
+            pcall(function() if slot.SetAlignment then slot:SetAlignment(FVector2DClass(0.5, 0.0)) end end)
+            SetOBWidgetVisibility(widget, true)
+            return {
+                widget = widget,
+                text = nameText,
+                slot = slot,
+                last_text = nil,
+                last_font = nil,
+                uses_ob_widget = true,
+            }
+        end
+        pcall(function() if widget.RemoveFromParent then widget:RemoveFromParent() end end)
+    end
 
     local text = NewUMG("/Script/UMG.TextBlock", canvas)
     if not text or not isValid(text) then return nil end
@@ -1129,7 +1203,9 @@ end
 
 local function RemoveFootTextEntry(entry)
     if not entry then return end
-    if isValid(entry.text) then
+    if isValid(entry.widget) then
+        pcall(function() entry.widget:RemoveFromParent() end)
+    elseif isValid(entry.text) then
         pcall(function() entry.text:RemoveFromParent() end)
     end
 end
@@ -1137,20 +1213,35 @@ end
 local function UpdateFootTextEntry(entry, canvasX, canvasY, label, fontSize)
     if not entry then return end
     local txt, slot = entry.text, entry.slot
-    if not isValid(txt) or not slot then return end
+    if not isValid(txt) and entry.uses_ob_widget and isValid(entry.widget) then
+        txt = GetOBNameText(entry.widget)
+        entry.text = txt
+    end
+    local hasText = isValid(txt)
+    if not slot then return end
+    if not hasText and not (entry.uses_ob_widget and isValid(entry.widget)) then return end
 
     if entry.last_font ~= fontSize then
-        SetFontSize(txt, fontSize)
-        ClearOutlineAndShadow(txt)
-        pcall(function() if txt.SetColorAndOpacity then txt:SetColorAndOpacity(C_TX_WHITE) end end)
+        if hasText then
+            SetFontSize(txt, fontSize)
+            ClearOutlineAndShadow(txt)
+            pcall(function() if txt.SetColorAndOpacity then txt:SetColorAndOpacity(C_TX_WHITE) end end)
+        end
         entry.last_font = fontSize
     end
     if entry.last_text ~= label then
-        pcall(function() if txt.SetText then txt:SetText(label) end end)
+        if hasText then
+            pcall(function() if txt.SetText then txt:SetText(label) end end)
+        end
         entry.last_text = label
     end
 
-    pcall(function() if txt.SetColorAndOpacity then txt:SetColorAndOpacity(C_TX_WHITE) end end)
+    if hasText then
+        pcall(function() if txt.SetColorAndOpacity then txt:SetColorAndOpacity(C_TX_WHITE) end end)
+    end
+    if entry.uses_ob_widget and isValid(entry.widget) then
+        SetOBWidgetVisibility(entry.widget, true)
+    end
 
     pcall(function()
         if slot.SetAlignment then
