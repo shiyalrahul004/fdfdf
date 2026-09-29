@@ -1622,4 +1622,6 @@ _G.InitModMenuTab = function()
     end
 end
 
-_G.InitModMenuTab()
+if _G.Mod_Use3LuaMenu == true then
+    _G.InitModMenuTab()
+end
